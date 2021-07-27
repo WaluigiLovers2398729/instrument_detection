@@ -1,6 +1,6 @@
 from mynn.layers.conv import conv
 from mynn.layers.dense import dense
-from mynn.optimizers.sgd import Adam
+from mynn.optimizers import Adam
 from mygrad.nnet.initializers import glorot_uniform
 from mygrad.nnet.activations import relu
 from mygrad.nnet.layers import max_pool
@@ -64,9 +64,6 @@ class Model:
         self.dense2 = dense(d1, num_classes, 
                             weight_initializer=glorot_uniform, 
                             weight_kwargs=init_kwargs)
-
-        self.optim = Adam(self.model.parameters, learning_rate=0.01, momentum=0.9, weight_decay=5e-04)
-        # </COGINST>
 
     
     def __call__(self, x):
@@ -185,6 +182,7 @@ class Model:
         -------
         None
         """
+        self.optim = Adam(self.parameters, learning_rate=0.01, momentum=0.9, weight_decay=5e-04)
         batch_size = 32
         num_epochs = 100
         for epoch_cnt in range(num_epochs):
