@@ -1,6 +1,5 @@
 from mynn.layers.conv import conv
 from mynn.layers.dense import dense
-from mynn.optimizers import Adam
 from mygrad.nnet.initializers import glorot_uniform
 from mygrad.nnet.activations import relu
 from mygrad.nnet.layers import max_pool
@@ -46,19 +45,19 @@ class Model:
         # <COGINST>
         init_kwargs = {'gain': np.sqrt(2)}
 
-        self.conv1 = conv(num_input_channels, f1, 4, 4, 
+        self.conv1 = conv(num_input_channels, f1, 4, 2, padding=(2, 1), 
                           weight_initializer=glorot_uniform, 
                           weight_kwargs=init_kwargs)
-        self.conv2 = conv(f1, f2, 3, 3,
+        self.conv2 = conv(f1, f2, 3, 1,
                           weight_initializer=glorot_uniform, 
                           weight_kwargs=init_kwargs)
-        self.conv3 = conv(f2, f3, 2, 2 ,
+        self.conv3 = conv(f2, f3, 2, 1, padding=(0,1),
                           weight_initializer=glorot_uniform, 
                           weight_kwargs=init_kwargs)
-        self.conv4 = conv(f3, f4, 2, 2 ,
+        self.conv4 = conv(f3, f4, 2, 1, padding=(0,1),
                           weight_initializer=glorot_uniform, 
                           weight_kwargs=init_kwargs)
-        self.dense1 = dense(f4 * 2 * 2, d1, 
+        self.dense1 = dense(4284, d1, 
                             weight_initializer=glorot_uniform, 
                             weight_kwargs=init_kwargs)
         self.dense2 = dense(d1, num_classes, 
@@ -82,20 +81,20 @@ class Model:
         
         # Define the "forward pass" for this model based on the architecture detailed above.
 
-        x = relu(self.conv1(x))
-        x = batchnorm(x)
+        x = relu(self.conv1(x)[...,:-1,:])
+        x = batchnorm(x, eps=1e-7)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.conv2(x))
-        x = batchnorm(x)
+        x = batchnorm(x, eps=1e-7)
         x = max_pool(x, (2, 2), 2)
 
-        x = relu(self.conv3(x))
-        x = batchnorm(x)
+        x = relu(self.conv3(x)[...,:,:-1])
+        x = batchnorm(x, eps=1e-7)
         x = max_pool(x, (2, 2), 2)
 
-        x = relu(self.conv4(x))
-        x = batchnorm(x)
+        x = relu(self.conv4(x)[...,:,:-1])
+        x = batchnorm(x, eps=1e-7)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.dense1(x.reshape(x.shape[0], -1)))
@@ -163,58 +162,3 @@ class Model:
         """
         weight = np.load(weights)
         return weight
-
-    def train_model(self, x_train, y_train):
-        """ 
-        trains model and plots loss and acc
-
-        Parameters
-        ----------
-
-        x_train: np.array
-            the training data
-        
-        y_train: np.array
-            the training labels
-
-
-        Returns
-        -------
-        None
-        """
-        self.optim = Adam(self.parameters, learning_rate=0.01, momentum=0.9, weight_decay=5e-04)
-        batch_size = 32
-        num_epochs = 100
-        for epoch_cnt in range(num_epochs):
-            idxs = np.arange(len(x_train))  # -> array([0, 1, ..., 9999])
-            np.random.shuffle(idxs)  
-        
-            for batch_cnt in range(len(x_train)//batch_size):
-                batch_indices = idxs[batch_cnt*batch_size : (batch_cnt + 1)*batch_size]
-                batch = x_train[batch_indices]  # random batch of our training data
-
-                # compute the predictions for this batch by calling on model
-                prediction = self.model(batch)
-
-                # compute the true (a.k.a desired) values for this batch: 
-                truth = y_train[batch_indices]
-
-                # compute the loss associated with our predictions(use softmax_cross_entropy)
-                loss = softmax_crossentropy(prediction, truth)
-
-                # back-propagate through your computational graph through your loss
-                loss.backward()
-
-                # execute gradient descent by calling step() of optim
-                self.optim.step()
-                
-                # compute the accuracy between the prediction and the truth 
-                acc = self.accuracy(prediction, truth)
-                
-                # set the training loss and accuracy
-                self.plotter.set_train_batch({"loss" : loss.item(),
-                                        "accuracy" : acc},
-                                        batch_size=batch_size)
-            
-            self.plotter.set_train_epoch()
-        self.plotter.plot()

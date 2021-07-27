@@ -43,5 +43,5 @@ def filesample(filename):
         the shape-(N,) array of samples and the corresponding shape-(N,) array of times
     """
     sampling_rate, samples = wavfile.read(filename)
-    times = np.arange(samples.size) / sampling_rate
-    return samples, times
+    times = np.arange(len(samples)) / sampling_rate
+    return samples, sampling_rate

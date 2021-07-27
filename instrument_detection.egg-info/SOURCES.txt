@@ -1,0 +1,6 @@
+README.md
+setup.py
+instrument_detection.egg-info/PKG-INFO
+instrument_detection.egg-info/SOURCES.txt
+instrument_detection.egg-info/dependency_links.txt
+instrument_detection.egg-info/top_level.txt

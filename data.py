@@ -13,6 +13,7 @@ import io
 import pickle
 import numpy as np
 
+INSTRUMENTS = {'cel': 0,'cla': 1,'flu': 2,'gac': 3,'gel': 4,'org': 5,'pia': 6,'sax': 7,'tru': 8,'vio': 9,'voi': 10}
 
 def load_dictionary(file_path):
     """
@@ -34,7 +35,7 @@ def load_dictionary(file_path):
         return pickle.load(opened_file)
     
 
-def save_dictionary(dict, file_path):
+def save_dictionary(dict_, file_path):
     """
     saves a dictionary to a Pickle file
     Parameters
@@ -52,7 +53,7 @@ def save_dictionary(dict, file_path):
     
     """
     with open(file_path, mode = "wb") as opened_file:
-        pickle.dump(dict, opened_file)
+        pickle.dump(dict_, opened_file)
 
 def initialize_database():
     """
@@ -80,7 +81,7 @@ def initialize_database():
         print("Error: Invalid Option") 
     return database
 
-def populate_database(dict, file_path):
+def populate_database(dict_, file_path):
     """
     Populate a dictionary database 
     Parameters
@@ -96,51 +97,13 @@ def populate_database(dict, file_path):
     database : dict
         populated database
     """
+    
     for subdir, dirs, files in os.walk(file_path):
         inst = os.path.basename(os.path.normpath(subdir))
         for file in files:
             p = os.path.join(subdir, file)
-            digital_samples, times = filesample(p)
-            spectrogram = make_spectogram(digital_samples, times)
-            dict[inst] = spectrogram
+            digital_samples, sampling_rate = filesample(p)
+            spectrogram = make_spectogram(digital_samples, sampling_rate)
+            dict_[INSTRUMENTS[inst]] = spectrogram
 
-    return dict     
-
-def micsample(listentime):
-    """
-    Uses the microphone to record audio and returns a numpy array
-    of digital samples
-
-    Parameters
-    ----------
-    listentime : float
-        length of recording in seconds
-        
-    Returns
-    -------
-    (samples, times) : Tuple[ndarray, ndarray]
-        the shape-(N,) array of samples and the corresponding shape-(N,) array of times
-    """
-    frames, sampling_rate = record_audio(listentime)
-    samples = np.hstack([np.frombuffer(i, np.int16) for i in frames])
-    times = np.arange(samples.size) / sampling_rate
-    return samples, times
-
-def filesample(filename):
-    """
-    Read in audio samples from a sound file and returns
-    a numpy array of digital samples
-
-    Parameters
-    ----------
-    filename : string 
-        file name of audio file to be analyzed
-        
-    Returns
-    -------
-    (samples, times) : Tuple[ndarray, ndarray]
-        the shape-(N,) array of samples and the corresponding shape-(N,) array of times
-    """
-    sampling_rate, samples = wavfile.read(filename)
-    times = np.arange(samples.size) / sampling_rate
-    return samples, times
+    return dict_
