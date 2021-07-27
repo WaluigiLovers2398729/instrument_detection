@@ -55,7 +55,7 @@ def make_spectogram(digital_samples, times):
         digital_samples, window_shape=(window_size,), step=window_size // extend_factor
     )
 
-    M, N = windowed_audio.shape
+    M, N = windowed_audio.shape[:2]
     ck_for_each_window = np.fft.rfft(windowed_audio, axis=-1)
     ak_for_each_window = np.absolute(ck_for_each_window) / N
     ak_for_each_window[:, 1 : (-1 if N % 2 == 0 else None)] *= 2

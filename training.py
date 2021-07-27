@@ -94,6 +94,6 @@ def populate_database(dict, file_path):
             p = os.path.join(subdir, file)
             digital_samples, times = filesample(p)
             spectrogram = make_spectogram(digital_samples, times)
-            dict[spectrogram] = inst
+            dict[inst] = spectrogram
 
     return dict     
