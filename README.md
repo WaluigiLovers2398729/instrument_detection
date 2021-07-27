@@ -49,7 +49,7 @@ You can read more about the basics of creating a Python package [here](https://w
       * Returns digital samples and times
 
 ### get_spectrogram.py
-   1. [NOT STARTED] Function to make Spectrogram (Day 3 Notebook: Spectrogram + Day
+   1. [Coded, Not Tested] Function to make Spectrogram (Day 3 Notebook: Spectrogram + Day
     2 Notebook: DFT)
       * takes in digital samples
       * does fourier transforms
@@ -75,9 +75,16 @@ You can read more about the basics of creating a Python package [here](https://w
    1. [NOT STARTED] train(train_data):
       trains model using train_data
       divides database into batches of random files
-   2. [NOT STARTED] load_dictionary(file_path):
+   2. [Coded, Not Tested] load_dictionary(file_path):
       loads a dictionary from a Pickle file
-   3. [NOT STARTED] save_dictionary(dict, file_path):
+   3. [Coded, Not Tested] save_dictionary(dict, file_path):
       saves a dictionary to a Pickle file
-   4. [NOT STARTED] populate_database(dict={}, file_path)
+   4. [NOT STARTED] populate_database(dict, file_path):
+      use file_path as the path to the overall folder
+      loop through each folder - get classification from folder names
+      in each folder, loop through each audio file and turn audio into spectrogram np array
+      add array, classification to dict
+      return dictionary
+   5. [Coded, Not Tested] initialize_database():
+      take in a dictionary loaded from a file or create new dictionary
       

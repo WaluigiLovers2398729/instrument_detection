@@ -4,8 +4,8 @@
 
 import numpy as np
 from microphone import record_audio
-import librosa
 import pathlib
+from scipy.io import wavfile
 
 def micsample(listentime):
     """
@@ -27,7 +27,7 @@ def micsample(listentime):
     times = np.arange(samples.size) / sampling_rate
     return samples, times
 
-def filesample(filename, cliptime):
+def filesample(filename):
     """
     Uses librosa to read in audio samples from a sound file and returns
     a numpy array of digital samples
@@ -36,17 +36,12 @@ def filesample(filename, cliptime):
     ----------
     filename : string 
         file name of audio file to be analyzed
-
-    cliptime : float
-        duration of file to sample from
         
     Returns
     -------
     (samples, times) : Tuple[ndarray, ndarray]
         the shape-(N,) array of samples and the corresponding shape-(N,) array of times
     """
-    p = pathlib.Path(filename)
-    filepath = str(p.absolute())
-    samples, sampling_rate = librosa.load(filepath, sr=44100, mono=True, duration=cliptime)
+    sampling_rate, samples = wavfile.read(filename)
     times = np.arange(samples.size) / sampling_rate
     return samples, times
