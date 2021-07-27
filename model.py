@@ -4,6 +4,7 @@ from mynn.optimizers.sgd import Adam
 from mygrad.nnet.initializers import glorot_uniform
 from mygrad.nnet.activations import relu
 from mygrad.nnet.layers import max_pool
+from mygrad.nnet.layers import batchnorm
 from mygrad.nnet.losses import softmax_crossentropy
 import mygrad as mg
 import numpy as np
@@ -85,15 +86,19 @@ class Model:
         # Define the "forward pass" for this model based on the architecture detailed above.
 
         x = relu(self.conv1(x))
+        x = batchnorm(x)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.conv2(x))
+        x = batchnorm(x)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.conv3(x))
+        x = batchnorm(x)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.conv4(x))
+        x = batchnorm(x)
         x = max_pool(x, (2, 2), 2)
 
         x = relu(self.dense1(x.reshape(x.shape[0], -1)))
