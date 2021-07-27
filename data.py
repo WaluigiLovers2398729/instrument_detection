@@ -2,10 +2,109 @@
 # be them recorded from the microphone or digital audio files, into a 
 # NumPy-array of digital samples. (Nicholas Won)
 
-import numpy as np
 from microphone import record_audio
-import librosa
+from digital_sampling import *
+from get_spectrogram import *
+from scipy.io import wavfile
 import pathlib
+import os, sys
+import pathlib as Path
+import io
+import pickle
+import numpy as np
+
+
+def load_dictionary(file_path):
+    """
+    loads a dictionary from a Pickle file
+    Parameters
+    ----------
+    file_path: string
+        path and name of file
+    
+    Returns
+    -------
+    dictionary 
+        unpickled dictionary
+    Notes
+    -----
+    
+    """
+    with open(file_path, mode = "rb") as opened_file:
+        return pickle.load(opened_file)
+    
+
+def save_dictionary(dict, file_path):
+    """
+    saves a dictionary to a Pickle file
+    Parameters
+    ----------
+    dict: dictionary
+        dictionary to pickle
+    file_path: string
+        path and name of file to store dictionary to 
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    
+    """
+    with open(file_path, mode = "wb") as opened_file:
+        pickle.dump(dict, opened_file)
+
+def initialize_database():
+    """
+    Initalizes a dictionary database 
+    Parameters
+    ----------
+    None
+    
+    Returns
+    ------
+    database : dict
+        initialized database
+    """
+    database = {}
+    dictionary_type = int(input("Enter 0 to input a pickled dictionary, Enter 1 to have it initialized: "))
+    # Pickled Dictionary
+    if dictionary_type == 0:
+        file_path = input("Enter the file path and file name to the dictionary: ")
+        database = load_dictionary(file_path)
+    # We initialized 
+    elif dictionary_type == 1:
+        pass
+    # Invalid Option
+    else:
+        print("Error: Invalid Option") 
+    return database
+
+def populate_database(dict, file_path):
+    """
+    Populate a dictionary database 
+    Parameters
+    ----------
+    dict: dictionary
+        dictionary containing database of either training or testing data
+    
+    file_path: string
+        path to folder of subfolders with audio files
+    
+    Returns
+    ------
+    database : dict
+        populated database
+    """
+    for subdir, dirs, files in os.walk(file_path):
+        inst = os.path.basename(os.path.normpath(subdir))
+        for file in files:
+            p = os.path.join(subdir, file)
+            digital_samples, times = filesample(p)
+            spectrogram = make_spectogram(digital_samples, times)
+            dict[inst] = spectrogram
+
+    return dict     
 
 def micsample(listentime):
     """
@@ -27,26 +126,21 @@ def micsample(listentime):
     times = np.arange(samples.size) / sampling_rate
     return samples, times
 
-def filesample(filename, cliptime):
+def filesample(filename):
     """
-    Uses librosa to read in audio samples from a sound file and returns
+    Read in audio samples from a sound file and returns
     a numpy array of digital samples
 
     Parameters
     ----------
     filename : string 
         file name of audio file to be analyzed
-
-    cliptime : float
-        duration of file to sample from
         
     Returns
     -------
     (samples, times) : Tuple[ndarray, ndarray]
         the shape-(N,) array of samples and the corresponding shape-(N,) array of times
     """
-    p = pathlib.Path(filename)
-    filepath = str(p.absolute())
-    samples, sampling_rate = librosa.load(filepath, sr=44100, mono=True, duration=cliptime)
+    sampling_rate, samples = wavfile.read(filename)
     times = np.arange(samples.size) / sampling_rate
     return samples, times

@@ -35,56 +35,54 @@ You can read more about the basics of creating a Python package [here](https://w
 # Planning
 
 ### data.py
+
+   # train_data = {<spect_audio_file>:<classification>}
+   # test_data = {<spect_audio_file>:<classification>}
    1. [Coded, Not Tested] Function to use Mic to record data in form of NumPy array (Day 1, WorkingWithMic)
       * Takes in listenduration
       * Uses microphone record_audio with listenduration to get frames, samplingrate
       * Uses np.hstack on frames to join frames in a single array of digital samples
       * Calculates respective times
       * Return digital samples and times
-   2. [Coded, Not Tested] Function to convert any audio file to NumPy-array of digital samples (Day 1, AnalogToDigital)
+   2. [TESTED] Function to convert any audio file to NumPy-array of digital samples (Day 1, AnalogToDigital)
       * Takes in file name and clipduration
       * Pathlib uses file name to find file path, stored as string
       * Uses librosa.load with filepath/samplerate/mono/duration to get samples, samplingrate
       * Calculates respective times
       * Returns digital samples and times
+   3. [Coded, Not Tested] load_dictionary(file_path):
+      loads a dictionary from a Pickle file
+   4. [Coded, Not Tested] save_dictionary(dict, file_path):
+      saves a dictionary to a Pickle file
+   5. [TESTED] populate_database(dict, file_path):
+      use file_path as the path to the overall folder
+      loop through each folder - get classification from folder names
+      in each folder, loop through each audio file and turn audio into spectrogram np array
+      add array, classification to dict
+      return dictionary
+   6. [TESTED] initialize_database():
+      take in a dictionary loaded from a file or create new dictionary
 
 ### get_spectrogram.py
-   1. [Coded, Not Tested] Function to make Spectrogram (Day 3 Notebook: Spectrogram + Day
+   1. [TESTED] Function to make Spectrogram (Day 3 Notebook: Spectrogram + Day
     2 Notebook: DFT)
       * takes in digital samples
       * does fourier transforms
       * gets spectogram np array
 
 ### model.py
-   1. [NOT STARTED] init() 
+   1. [Coded, Not Tested] init() 
       * Set up all the layers
-   2. [NOT STARTED] call()
+   2. [Coded, Not Tested] call()
       * Do the forward pass, so imitate the paper
-   3. [NOT STARTED] parameters()
+   3. [Coded, Not Tested] parameters()
       * get parameters
-   4. [NOT STARTED] loss_accuracy()
+   4. [Coded, Not Tested] loss_accuracy()
       * returns loss and accuracy
-   5. [NOT STARTED] save_weights()
+   5. [Coded, Not Tested] save_weights()
       * Saves the weights from the trained model
-   6. [NOT STARTED] load_weights()
+   6. [Coded, Not Tested] load_weights()
       * Loads the weights from the trained model
-
-### training.py
-   # train_data = {<spect_audio_file>:<classification>}
-   # test_data = {<spect_audio_file>:<classification>}
-   1. [NOT STARTED] train(train_data):
-      trains model using train_data
-      divides database into batches of random files
-   2. [Coded, Not Tested] load_dictionary(file_path):
-      loads a dictionary from a Pickle file
-   3. [Coded, Not Tested] save_dictionary(dict, file_path):
-      saves a dictionary to a Pickle file
-   4. [NOT STARTED] populate_database(dict, file_path):
-      use file_path as the path to the overall folder
-      loop through each folder - get classification from folder names
-      in each folder, loop through each audio file and turn audio into spectrogram np array
-      add array, classification to dict
-      return dictionary
-   5. [Coded, Not Tested] initialize_database():
-      take in a dictionary loaded from a file or create new dictionary
-      
+   7. [Coded, Not Tested] train(train_data):
+      * trains model using train_data
+      * divides database into batches of random files

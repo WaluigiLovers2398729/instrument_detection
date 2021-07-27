@@ -1,124 +1,217 @@
+from mynn.layers.conv import conv
 from mynn.layers.dense import dense
-from mygrad.nnet.initializers import glorot_normal
+from mynn.optimizers.sgd import Adam
+from mygrad.nnet.initializers import glorot_uniform
+from mygrad.nnet.activations import relu
+from mygrad.nnet.layers import max_pool
+from mygrad.nnet.losses import softmax_crossentropy
 import mygrad as mg
 import numpy as np
 
 class Model:
-    def __init__(self, input_dim, output_dim):
-        """ 
-        Initializes all of the encoder and decoder layers in our model, setting them
-        as attributes of the model.
-        
+    def __init__(self, num_input_channels, f1, f2, f3, f4, d1, num_classes):
+        """
         Parameters
         ----------
-        context_words : int
-            The number of context words included in our vocabulary
+        num_input_channels : int
+            The number of channels for a input datum
             
-        d : int
-            The dimensionality of our word embeddings
+        f1 : int
+            The number of filters in conv-layer 1
+        
+        f2 : int
+            The number of filters in conv-layer 2
 
-        Returns
-        -------
-        None
+        f3 : int
+            The number of filters in conv-layer 3
+
+        f4 : int
+            The number of filters in conv-layer 4
+
+        d1 : int
+            The number of neurons in dense-layer 1
+        
+        num_classes : int
+            The number of classes predicted by the model.
         """
-        self.encoder = dense(input_dim, output_dim, weight_initializer = glorot_normal, bias = False)
+        # Initialize your two convolution layers and two dense layers each 
+        # as class attributes using the functions imported from MyNN
+        #
+        # We will use `weight_initializer=glorot_uniform` for all 4 layers
+        
+        # Note that you will need to compute `input_size` for
+        # dense layer 1 : the number of elements being produced by the preceding conv
+        # layer
+        # <COGINST>
+        init_kwargs = {'gain': np.sqrt(2)}
+
+        self.conv1 = conv(num_input_channels, f1, 4, 4, 
+                          weight_initializer=glorot_uniform, 
+                          weight_kwargs=init_kwargs)
+        self.conv2 = conv(f1, f2, 3, 3,
+                          weight_initializer=glorot_uniform, 
+                          weight_kwargs=init_kwargs)
+        self.conv3 = conv(f2, f3, 2, 2 ,
+                          weight_initializer=glorot_uniform, 
+                          weight_kwargs=init_kwargs)
+        self.conv4 = conv(f3, f4, 2, 2 ,
+                          weight_initializer=glorot_uniform, 
+                          weight_kwargs=init_kwargs)
+        self.dense1 = dense(f4 * 2 * 2, d1, 
+                            weight_initializer=glorot_uniform, 
+                            weight_kwargs=init_kwargs)
+        self.dense2 = dense(d1, num_classes, 
+                            weight_initializer=glorot_uniform, 
+                            weight_kwargs=init_kwargs)
+
+        self.optim = Adam(self.model.parameters, learning_rate=0.01, momentum=0.9, weight_decay=5e-04)
+        # </COGINST>
+
     
     def __call__(self, x):
-        """
-        Passes data as input to our model, performing a "forward-pass".
-        
-        This allows us to conveniently initialize a model `m` and then send data through it
-        to be classified by calling `m(x)`.
+        """ Defines a forward pass of the model.
         
         Parameters
         ----------
-        x : Union[numpy.ndarray, mygrad.Tensor], shape=(512,)
-            A batch of data consisting of a resnet image dvector of shape 512
-                
+        x : numpy.ndarray, shape=(N, 1, 32, 32)
+            The input data, where N is the number of images.
+            
         Returns
         -------
-        mygrad.Tensor, shape=(M, context_words)
-            The result of passing the data through both the encoder and decoder.
+        mygrad.Tensor, shape=(N, num_classes)
+            The class scores for each of the N images.
         """
-        unit_vectors = []
-        for i in x:
-            normal_this = self.encoder(i)
-            # normal = mg.sqrt((normal_this**2).sum(keepdims = True))
-            normal = normal_this / (mg.sqrt(mg.sum(normal_this ** 2, axis=1, keepdims=True)))
-            unit_vectors.append(normal)
-        return np.array(unit_vectors)
+        
+        # Define the "forward pass" for this model based on the architecture detailed above.
+
+        x = relu(self.conv1(x))
+        x = max_pool(x, (2, 2), 2)
+
+        x = relu(self.conv2(x))
+        x = max_pool(x, (2, 2), 2)
+
+        x = relu(self.conv3(x))
+        x = max_pool(x, (2, 2), 2)
+
+        x = relu(self.conv4(x))
+        x = max_pool(x, (2, 2), 2)
+
+        x = relu(self.dense1(x.reshape(x.shape[0], -1)))
+        return self.dense2(x)
 
     @property
     def parameters(self):
-        """ 
-        A convenience function for getting all the parameters of our model.
-        This can be accessed as an attribute, via `model.parameters` 
+        """ A convenience function for getting all the parameters of our model. """
+        params = []
+        for layer in (self.conv1, self.conv2, self.conv3, self.conv4, self.dense1, self.dense2):
+            params += list(layer.parameters)
+        return params
+
+
+    def accuracy(self, predictions, truth):
+        """
+        Returns the mean classification accuracy for a batch of predictions.
         
         Parameters
         ----------
-        None
+        predictions : Union[numpy.ndarray, mg.Tensor], shape=(M, D)
+            The scores for D classes, for a batch of M data points
+
+        truth : numpy.ndarray, shape=(M,)
+            The true labels for each datum in the batch: each label is an
+            integer in [0, D)
+        
+        Returns
+        -------
+        float
+            The fraction of predictions that indicated the correct class.
+        """
+        return np.mean(np.argmax(predictions, axis=1) == truth) # <COGLINE>
+
+    def save_weights(self):
+        """ 
+        Saves the weights from the trained model
+
+        Parameters
+        ----------
+        model : obj
+            the trained model that is an instance of the Model class
 
         Returns
         -------
-        Tuple[Tensor, ...]
-            A tuple containing all of the learnable parameters for our model
+        str
+            the file name in which the weights are stored
         """
-        return self.encoder.parameters
+        np.save("weights.npy", self.model.parameters)
+        return "weights.npy"
 
-def loss_accuracy(sim_match, sim_confuse, margin, triplet_count=0):
-    """ 
-    returns loss and accuracy
-    
-    Parameters
-    ----------
-    sim_match, sim_confuse, threshold, triplets = 0
+    def load_weights(self, weights):
+        """ 
+        Loads the weights from the trained model
 
-    Returns
-    -------
-    Tuple[Tensor, ...]
-        tuple of loss and accuracy 
-    """
-    loss = mg.nnet.losses.margin_ranking_loss(sim_match, sim_confuse, 1, margin)  
-    
-    flat_sim_match = sim_match.flatten()                                 
-    flat_sim_confuse = sim_confuse.flatten()
-    
-    true_count = sum([flat_sim_match[i] > flat_sim_confuse[i] for i in range(len(flat_sim_match))])             
-    
-    acc = true_count / triplet_count
+        Parameters
+        ----------
+        weights : str
+            the file name in which the weights are stored
 
-    return loss, acc
+        Returns
+        -------
+        np.array
+            loading in the saved weight matrix from the given file name
+        """
+        weight = np.load(weights)
+        return weight
 
-def save_weights(model):
-    """ 
-    Saves the weights from the trained model
+    def train_model(self, x_train, y_train):
+        """ 
+        trains model and plots loss and acc
 
-    Parameters
-    ----------
-    model : obj
-        the trained model that is an instance of the Model class
+        Parameters
+        ----------
 
-    Returns
-    -------
-    str
-        the file name in which the weights are stored
-    """
-    np.save("weights.npy", model.parameters)
-    return "weights.npy"
+        x_train: np.array
+            the training data
+        
+        y_train: np.array
+            the training labels
 
-def load_weights(weights):
-    """ 
-    Loads the weights from the trained model
 
-    Parameters
-    ----------
-    weights : str
-        the file name in which the weights are stored
+        Returns
+        -------
+        None
+        """
+        batch_size = 32
+        num_epochs = 100
+        for epoch_cnt in range(num_epochs):
+            idxs = np.arange(len(x_train))  # -> array([0, 1, ..., 9999])
+            np.random.shuffle(idxs)  
+        
+            for batch_cnt in range(len(x_train)//batch_size):
+                batch_indices = idxs[batch_cnt*batch_size : (batch_cnt + 1)*batch_size]
+                batch = x_train[batch_indices]  # random batch of our training data
 
-    Returns
-    -------
-    np.array
-        loading in the saved weight matrix from the given file name
-    """
-    weight = np.load(weights)
-    return weight
+                # compute the predictions for this batch by calling on model
+                prediction = self.model(batch)
+
+                # compute the true (a.k.a desired) values for this batch: 
+                truth = y_train[batch_indices]
+
+                # compute the loss associated with our predictions(use softmax_cross_entropy)
+                loss = softmax_crossentropy(prediction, truth)
+
+                # back-propagate through your computational graph through your loss
+                loss.backward()
+
+                # execute gradient descent by calling step() of optim
+                self.optim.step()
+                
+                # compute the accuracy between the prediction and the truth 
+                acc = self.accuracy(prediction, truth)
+                
+                # set the training loss and accuracy
+                self.plotter.set_train_batch({"loss" : loss.item(),
+                                        "accuracy" : acc},
+                                        batch_size=batch_size)
+            
+            self.plotter.set_train_epoch()
+        self.plotter.plot()
